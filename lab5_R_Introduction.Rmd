@@ -1,0 +1,51 @@
+---
+title: "R_Introduction.Rmd"
+author: "Keith Hultman"
+date: "September 21, 2016"
+output: html_document
+---
+
+
+
+The four panels in RStudio, and what they do.
+1. Source
+2. Console
+3. Environment/History
+4. Files/Plots/Packages/Help/Viewer
+
+
+The Console is where all the action takes place. You can type directly into the console to get a result. It can act as a calculator. 
+
+-Type 5 + 7 in the console and hit enter.
+
+Great. 
+
+R is a calculator, but it is also a programming language, where we can automate a process or avoid unnecessary repetition. So in this case we want to store the answer of 5 + 7 as a variable.
+
+-Type x <- 5 + 7 in the console and hit enter.
+
+The arrow '<-' is the assignment function of R. It takes the stuff on the right and stores it in the variable name on the left. Notice the Environment now has the variable listed with it's value. 
+
+-Type x in the console and hit enter. 
+
+Boom. Amazing eh?
+
+-Store another value in the variable 'y'
+
+Ok, but the best thing about R is RStudio, and RStudio allows you to type commands in the Source document - like this document for example. And run those commands and keep a list of all of the commands you ran. This is great for Reproducible Research. 
+
+-Store another variable, this time by writing the command below this line.
+
+
+-Run the command by placing the cursor on the line and using the Command-Enter (Mac) or Control-Enter (PC, linux) keyboard shortcut. 
+
+Cool! 
+
+Let's learn more about using R by using a cool interactive tutorial called 'swirl.' Swirl is a package that is already installed in this server. Load the package, then run the package by running the following two lines
+
+library(swirl)
+swirl()
+
+follow along in the console
+
+

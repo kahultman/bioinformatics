@@ -1,0 +1,39 @@
+---
+title: "lastname_lab5.Rmd"
+author: "Keith Hultman"
+date: "September 21, 2016"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load Biostrings and matrices
+
+```{r, message=FALSE, warning=FALSE}
+library(Biostrings)
+data("BLOSUM50")
+```
+
+
+Show first 4 rows and columns of BLOSUM50
+
+```{r}
+BLOSUM50[1:4, 1:4]
+```
+
+Create and view BLOSUM50 alignment
+
+```{r}
+nw <- pairwiseAlignment(AAString("PAWHEAE"), AAString("HEAGAWGHEE"), substitutionMatrix = BLOSUM50, gapOpening = 0, gapExtension = -8)
+nw
+```
+
+```{r}
+compareStrings(nw)
+```
+
+x <- AAString("PAWHEAE")
