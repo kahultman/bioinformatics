@@ -24,7 +24,8 @@ biopackages <- c("GenomeGraphs",
                  "limma", 
                  "GEOquery", 
                  "Biobase", 
-                 "sequinr")
+                 "sequinr",
+                 "biomaRt)
 
 biocLite(biopackages)
 

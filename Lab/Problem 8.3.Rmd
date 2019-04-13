@@ -1,0 +1,84 @@
+---
+title: "Problem 8.3"
+author: "Jonathan Pevsner, modified by Keith Hultman"
+date: "June 10, 2016"
+output: html_document
+---
+ 
+Bioinformatics and Functional Genomics (3rd edition)   
+August, 2015
+```{r Setup}
+# Initialize library calls
+library(ggplot2)
+```
+
+
+#### First obtain the data from the UCSC table browser following the instructions in the text.
+
+Follow the directions in the text. One change from the text, for "group" select "Repeats" instead of "Variations and Repeats". This will give you the repeats found within the beta globin locus of human.
+
+#### Upload the file into RStudio
+
+After downloading the text file to your computer, change the name of the file to `ucsc_chr11_repeats`. Then, use the Upload button on the RStudio Files window to select your file and upload it. 
+
+#### Step 2, Option 1: Next download a file containing chromosome 11 repeats into this directory. Confirm the file is present using dir().
+
+We'll load the file into R (using the read.delim function), we'll call our new table myRepeats (you can assign it almost any name you prefer), specify that the table does have a header, and specify that it is tab-delimited (using sep = "\t"). Get help on a function such as read.delim by entering ?read.delim at the R command prompt.
+
+```{r import from local}
+dir() # Check to see if your file is here, if it's not something is wrong.
+myRepeats <- read.delim("ucsc_chr11_repeats", header = TRUE, sep = "\t")
+```
+
+#### Now we'll look at the file various ways, and change the names of the column headers.
+
+```{r look}
+head(myRepeats)
+# Change the names of the headers to something easier to read/understand
+colnames(myRepeats) <- c("swScore", "start", "end", "strand", "name", "class", "family")
+# Look at new header names
+head(myRepeats)
+# Summary stats for each column
+summary(myRepeats)
+# Rows by Columns:
+dim(myRepeats)
+# Show types of variables in each column:
+str(myRepeats)
+```
+
+#### Plot the repeat classes as a boxplot.
+
+```{r plot}
+
+# create a plot object with your data and parameters for the plot
+plot <- ggplot(data = myRepeats, aes(x= class, y= swScore)) +
+  geom_boxplot(fill= "pink") +
+  ylim(c(0,27500)) +
+  ggtitle("Repeat classes in the human beta globin locus") +
+  xlab("Class") +
+  ylab("SW Score")
+
+# print the plot  
+plot  
+```
+
+#### Use tapply to apply the functions mean and range over the entire array.
+
+```{r tapply}
+tapply(myRepeats$swScore, myRepeats$class, mean)
+tapply(myRepeats$swScore, myRepeats$class, range)
+```
+
+### Questions
+
+1. Remake the plot for the human kit locus. Use the lookup function of the position text field by searching for 'kit'. Download the same file type as before, then redo the analysis with that locus. 
+
+2. What is the mean SW score for the LINE class of kit and beta globin?
+
+
+
+#### Show the session information
+You should always have this at the end of your experiments for reproducible research purposes!
+```{r}
+sessionInfo()
+```

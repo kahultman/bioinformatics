@@ -1,0 +1,81 @@
+---
+title: "microarray-analysis2"
+author: "Keith Hultman"
+date: "June 10, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+https://www.bioconductor.org/help/course-materials/2015/Uruguay2015/day3-gene.expression.html
+
+```{r}
+library(Biobase)
+library(BiocGenerics)
+library(parallel)
+library(simpleaffy)
+library(RColorBrewer)
+library(GEOquery)
+library(affyPLM)
+
+setwd("/Volumes/Half_Dome/OneDrive/Bioinformatics Elmhurst/Labs/")
+
+x <- getGEOSuppFiles("GSE20986")
+
+x
+
+untar("GSE20986/GSE20986_RAW.tar", exdir = "data")
+
+cels <- list.files("data/", pattern = "[gz]")
+sapply(paste("data", cels, sep = "/"), gunzip)
+
+phenodata <- matrix(rep(list.files("data"),2), ncol = 2)
+class(phenodata)
+
+phenodata <- as.data.frame(phenodata)
+phenodata
+colnames(phenodata) <- c("Name", "FilenName")
+phenodata$Targets <- c("iris", 
+                       "retina", 
+                       "retina", 
+                       "iris", 
+                       "retina", 
+                       "iris", 
+                       "choroid", 
+                       "choroid", 
+                       "choroid", 
+                       "huvec", 
+                       "huvec", 
+                       "huvec")
+
+phenodata
+
+write.table(phenodata, "data/phenodata.txt", quote = FALSE, sep = "\t", row.names = FALSE)
+
+
+
+celfiles <- read.affy(covdesc = "phenodata.txt", path = "data")
+boxplot(celfiles)
+
+
+```
+
+```{r}
+library(RColorBrewer)
+cols <- brewer.pal(8, "Set1")
+boxplot(celfiles, col = cols)
+
+eset <- exprs(celfiles)
+colnames(eset)
+colnames(eset) <- celfiles$Targets
+colnames(eset)
+
+
+distance <- dist(t(eset), method = "maximum")
+clusters <- hclust(distance)
+plot(clusters)
+```
+

@@ -1,0 +1,78 @@
+---
+title: "Inference Exercise"
+author: "Keith Hultman"
+date: "October 10, 2016"
+output: html_document
+---
+
+# Using dplyr and creating histograms of data. 
+
+
+## Analysis of heights
+
+Let's recreate the histogram on heights from last week's lecture. Import the dataset and examine it. 
+```{r definingHeights, message=FALSE}
+data(father.son,package="UsingR")
+head(father.son)
+
+```
+
+Select the father heights column (fheights) and place into the variable 'father'. We will be using the dplyr package for data manipulation. This package uses 'pipes' (%>%) to send the data through several functions. First we have our variable and assignment operator (<-) followed by the data frame. Then we have a series of functions connected by pipes. In this case we just select one column called fheight, then we have to use the unlist function to create a vector from the data table. 
+
+And then take the mean of the father's heights.
+
+
+```{r}
+library(dplyr)
+father <- father.son %>% select(fheight) %>% unlist
+mean(father)
+```
+
+If we wanted to filter the data we could include a filter function. The following returns the father heights when the son's height is taller than the father average.
+
+```{r}
+filter_example <- father.son %>%  
+  filter(sheight > mean(father)) %>% 
+  select(fheight) %>% 
+  unlist
+
+mean(filter_example)
+```
+
+## Histogram
+Create a histogram of the heights of all fathers in the original data
+
+```{r hist, eval=FALSE}
+hist(father)
+```
+
+
+# Analysis of life expectancy
+
+Do the same analysis for life expectancy data. First we will extract data from the gapminder dataset, which includes data on life expectancy and gdp for several countries over many years. 
+
+```{r}
+library(gapminder)
+data(gapminder)
+head(gapminder)
+```
+
+Create a vector called 'lifeexp1952' of the life expectancies of each country for the year 1952, using the filter(year == 1952) function.
+
+```{r}
+
+```
+
+
+Plot a histogram of these life expectancies to see the spread of the different countries.
+
+```{r}
+
+```
+
+Make a histogram of life expectancies for the most recent year in the dataset, 2007.
+
+```{r}
+
+```
+

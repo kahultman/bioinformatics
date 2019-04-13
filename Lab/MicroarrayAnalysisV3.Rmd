@@ -1,0 +1,251 @@
+---
+title: "MicroarrayAnalysis"
+author: "Keith Hultman"
+date: "11/30/2016"
+output: pdf_document
+---
+# Microaray Analysis Lab
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+knitr::opts_knit$set(root.dir = "/home/public")
+```
+
+## Read in data set
+
+This data set is from [GSE20986](http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE20986)
+There are 12 microarray sample files from Browning et al.[^1]
+
+Read in the Affymetrix microarray data using the package "simpleaffy" and the read.affy command. We can look at the distribution of gene expression values of each chip using a simple boxplot plotting command. And we can then pretty it up a bit. 
+
+[^1]: Browning et al. Comparative gene expression profiling of human umbilical vein endothelial cells and ocular vascular endothelial cells. Br J Ophthalmol. 2012 Jan;96(1):128-32. doi: 10.1136/bjophthalmol-2011-300572. Epub 2011 Oct 25.
+
+```{r Load}
+setwd("/home/public")
+suppressWarnings(suppressMessages(library(simpleaffy)))
+suppressWarnings(suppressMessages(library(affyPLM)))
+suppressWarnings(suppressMessages(library(hgu133plus2probe)))
+
+celfiles <- read.affy(covdesc = "phenodata.txt", path = "browning")
+boxplot(celfiles)
+
+library(RColorBrewer)
+cols = brewer.pal(8, "Set1")
+boxplot(celfiles, col = cols, las = 2) #las flips the names to vertical on the x-axis
+```
+
+## Clustering the samples
+
+Now we will create a data format called an Expression Set from the affymetrix data. This will combine all of the individual CEL files into a variable called eset. 
+
+We then can cluster the samples based on their overall gene expression values for all genes. To do this, we first create a distance matrix. 
+
+
+Using that distance matrix we can then create a tree that shows which samples are most similar to one another. 
+
+```{r cluster}
+# Here we will create an "Expression Set" (eset) from the affy data
+eset <- exprs(celfiles)
+samples <- celfiles$Targets
+colnames(eset)
+colnames(eset) <- paste(colnames(eset), samples)
+
+# Create a distance matrix - calculates distances between each sample based on all of the gene expression values
+distance <- dist(t(eset), method = "maximum")
+clusters <- hclust(distance)
+plot(clusters)
+```
+
+## Q1 What method are we using to calculate distance? (remember which methods we covered in class?) 
+A:
+
+
+
+***
+
+Let's normalize our samples so that they have similar overall average gene expression. This will adjust for optical bias in affymetrix chips. 
+
+```{r normalize, cache=TRUE}
+celfiles.gcrma = gcrma(celfiles, optical.correct=TRUE, normalize=TRUE)
+colnames(celfiles.gcrma) <- paste(colnames(celfiles.gcrma), samples) 
+```
+
+We can produce boxplots back to back to compare normalized to pre-normalized.
+
+```{r compare normalization}
+par(mfrow=c(1,2))
+boxplot(celfiles.gcrma, col = cols, las = 2, main = "Post-Normalization");
+boxplot(celfiles, col = cols, las = 2, main = "Pre-Normalization")
+```
+
+And we can remake the dendrogram with normalized values.
+
+```{r normalized cluster}
+par(mfrow=c(1,1))
+distance.norm <- dist(t(exprs(celfiles.gcrma)), method = "maximum")
+clusters.norm <- hclust(distance.norm)
+plot(clusters.norm)
+```
+
+## Q2 How is this tree (dendrogram) different from the non-normalized? Which one makes more logical sense and why?
+A:
+
+## Q3 How does this normalized dendrogram fit within the question posed by Browning et. al on whether umbilical vein endothelial cells should be used as a model for ocular endothelial cells?
+A:
+
+***
+# Evaluate genes with differential gene expression between Huvec and Choroid samples
+
+Here's where we can identify differentially expressed genes using the Limma package. Limma requires a design matrix representing the different RNA targets that have been hybridized to the array (the samples), and a contrast matrix. We use model.matrix to create a design matrix from the description given in the Target column originally taken from the phenotypedata.txt file and saved as a list called samples. 
+```{r comparison}
+suppressWarnings(suppressMessages(library(limma)))
+# Create a matrix with 1s and 0s - to mark the labels for the cell type
+samples <- as.factor(samples)
+design <- model.matrix(~0+samples)
+colnames(design) <- c("choroid", "huvec", "iris", "retina")
+
+# Look at design
+design
+
+#fit a linear model to the data
+fit = lmFit(celfiles.gcrma, design)
+
+contrast.matrix = makeContrasts(
+              huvec_choroid = huvec - choroid, 
+              huvec_retina = huvec - retina, 
+              huvec_iris = huvec - iris, 
+              levels = design)
+contrast.matrix
+
+
+huvec_fit <- contrasts.fit(fit, contrast.matrix)
+huvec_ebay <- eBayes(huvec_fit)
+
+# Get annotation (names) of probes and genes
+suppressWarnings(suppressMessages(library(hgu133plus2.db)))
+suppressWarnings(suppressMessages(library(annotate)))
+
+probenames.list <- rownames(topTable(huvec_ebay, number = 100000))
+getsymbols <- getSYMBOL(probenames.list, "hgu133plus2")
+
+# Here is where we indicate which samples we are interested in comparing: Huvec vs Choroid
+results <- topTable(huvec_ebay, number = 100000, coef = "huvec_choroid")
+results <- cbind(results, getsymbols)
+results <- tibble::rownames_to_column(results, var = "affy_id")
+  
+```
+
+## Make some plots showing genes below a threshold P-value of 0.05
+
+Define thresholds. We can use this to label the genes based on their expression differences. Genes with a log fold change greater than 5 will be red. Genes with a log fold change below -5 (so 1/5th of expression) will be green. All other genes will be black. 
+
+```{r threshold}
+summary(results)
+
+results$threshold <- "Not.sig"
+
+up <- subset(results, adj.P.Val < 0.05 & logFC > 5)
+results[rownames(up), "threshold"] <- "Upregulated"
+down <- subset(results, adj.P.Val < 0.05 & logFC < -5)
+results[rownames(down), "threshold"] <- "Downregulated"
+results$threshold <- as.factor(results$threshold)
+results$threshold <- relevel(results$threshold, "Not.sig")
+table(results$threshold)
+```
+
+### Make a volcano plot
+
+x-axis is logFC, y axis is log of P value
+
+```{r volcano}
+suppressWarnings(suppressMessages(library(ggplot2)))
+
+volcano <- ggplot(data = results, 
+                  aes(x = logFC, y = -1*log10(adj.P.Val), colour = threshold, label = getsymbols)) +
+  geom_point() +
+  scale_color_manual(values = c("black", "red", "green"), 
+                     labels = c("Not Significant", "Upregulated", "Downregulated"), 
+                     name = "Legend") +
+  geom_text(data = subset(results, logFC > 5 & -1*log10(adj.P.Val) > 5), 
+            aes(x = logFC, y = -1*log10(adj.P.Val), colour = threshold, label = getsymbols) ) +
+  geom_text(data = subset(results, logFC < -5 & -1*log10(adj.P.Val) > 5), 
+            aes(x = logFC, y = -1*log10(adj.P.Val), colour = threshold, label = getsymbols) ) +
+  ggtitle("Volcano plot of differential expression between Huvec and Choroid endothelial cells")
+
+volcano
+```
+
+### MA Plot
+
+We can also make an MA plot
+
+```{r MA plot}
+MAplot <- ggplot(data = results, 
+                 aes(x = log10(AveExpr), y = logFC, colour = threshold, label = getsymbols)) + 
+  geom_point() + 
+  scale_color_manual(values = c("black", "red", "green"), 
+                     labels = c("Not Significant", "Upregulated", "Downregulated"), 
+                     name = "Legend") + 
+  geom_text(data = subset(results, logFC > 5 & -1*log10(adj.P.Val) > 5), 
+            aes(x = log10(AveExpr), y = logFC, 
+                colour = threshold, label = getsymbols)) +
+  geom_text(data = subset(results, logFC < -5 & -1*log10(adj.P.Val) > 5), 
+            aes(x = log10(AveExpr), y = logFC, 
+                colour = threshold, label = getsymbols)) +
+  ggtitle("MA plot of differential expression between Huvec and Choroid endothelial cells")
+
+MAplot
+```
+
+
+## Lists of top upregulated and downregulated genes
+
+```{r Lists}
+suppressWarnings(suppressMessages(library(dplyr)))
+
+
+paper_affy_id <- c("205572_at", "201596_x_at", "204489_s_at", "203939_at", "201474_s_at", "201474_s_at", "216264_s_at", "201926_s_at", "235706_at")
+
+in_paper <- filter(results, affy_id %in% paper_affy_id) %>% dplyr::select(affy_id, getsymbols, logFC, AveExpr, adj.P.Val)
+in_paper
+
+up <- arrange(up, adj.P.Val) %>% dplyr::select(affy_id, getsymbols, logFC, AveExpr, adj.P.Val)
+head(up)
+
+down <- arrange(down, adj.P.Val) %>% dplyr::select(affy_id, getsymbols, logFC, AveExpr, adj.P.Val)
+head(down)
+```
+
+## Q4 How do these lists compare to what was presented by the Browning paper?
+A:
+
+***
+# Evaluate genes with differential gene expression between Huvec and Iris samples
+
+
+## Assignment: Create Volcano and MA plots 
+
+Copy and edit code below to create Volcano and MA plots comparing Huvec with the Iris samples
+
+Extra Credit: plot both volcano plots, the Huvec:Choroid and the Huvec:Iris, next to one another just like we did with the normalized and non-normalized boxplots!
+
+
+
+```{r volcano 2}
+
+```
+
+
+```{r MA 2}
+
+```
+
+***
+```{r session info}
+sessionInfo()
+```
+

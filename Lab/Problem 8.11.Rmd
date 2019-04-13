@@ -1,0 +1,69 @@
+---
+title: "Problem 8.11"
+author: "Jonathan Pevsner, edited by Keith Hultman"
+date: "June 10, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+Bioinformatics and Functional Genomics  
+
+
+#### The dinucleotide CG is often referred to as CpG (p denotes the phosphate linkage between the two residues). In the human genome CpG dinucleotides occur at a very low frequency (about five-fold less than other dinucleotides). What are the frequencies of all dinucleotides at the human beta globin (HBB) locus on chromosome 11? 
+
+#### To answer this, we will obtain this DNA sequence in the FASTA format, import it into the R package SeqinR, and use the count function. This problem is described in an online book by Avril Coghlan available at http://a-little-book-of-r-for-bioinformatics.readthedocs.org/en/latest/src/chapter1.html.  See also the SeqinR documentation from http://SeqinR.r-forge.r-project.org/.
+
+#### Select a region of 60,000 base pairs on chr11:5,240,001-5,300,000, encompassing HBB and other globin genes. You can access the DNA via the Table Browser (select output format > sequence) or from the Genome Browser (view > DNA). You can also view SeqinR documentation for instructions on fetching sequences from NCBI in R. 
+
+
+#### Load the SeqinR library.
+
+```{r install, cache=TRUE}
+library("seqinr")
+```
+
+#### Import the sequence data. We read the FASTA formatted file into an R object called globinDNA.
+See text for how to obtain the sequence. 
+```{r dir, cache=TRUE}
+dir() # Looking at at the directory we confirm the sequence file is present
+globinDNA <- read.fasta(file = "chr11_60kb")
+globinseq <- globinDNA[[1]]
+```
+
+#### Confirm the length of this sequence is 60 kb.
+
+```{r length, cache=TRUE}
+length(globinseq)  
+```
+
+#### The count function reports the frequency of each nucleotide.
+
+```{r count}
+count(globinseq,1) 
+```
+
+#### We specify we want to know the frequency of all dinucleotides.
+
+```{r dinucl}
+count(globinseq,2)
+```
+
+#### Note that the frequency of CpG dinucleotides is indeed substantially lower than that of all other dinucleotides. We can also create a table object with these results (called mydinucleotides) and view a particular result. We can also plot the results.
+
+```{r plot, cache=TRUE}
+mydinucleotides <- count(globinseq,2)
+mydinucleotides[["cg"]]
+plot(mydinucleotides)
+```
+
+#### Questions
+Graph the relative frequencies of all dinucleotides instead of the absolute counts. Hint: look at the documentation for the sequinr:count function to find out how to return frequencies: "?count"
+
+
+#### Show the session information
+```{r}
+sessionInfo()
+```
+

@@ -1,0 +1,131 @@
+---
+title: "Problem 8.3"
+author: "Jonathan Pevsner, modified by Keith Hultman"
+date: "June 10, 2016"
+output: html_document
+---
+ 
+Bioinformatics and Functional Genomics (3rd edition)   
+August, 2015
+```{r Setup}
+library(curl)
+library(ggplot2)
+```
+
+
+#### First set your working directory (it can be your desktop or anywhere else). Use getwd() to see the current working directory, and (as needed) use setwd() to change it.
+
+```{r}
+getwd()
+# "C:/Users/e0486876/Documents"  ---My workign directory
+# I made a folder called Bioinformatics using RStudio's New Folder und
+# setwd("Bioinformatics/")
+
+setwd("/Volumes/Half_Dome/OneDrive/Bioinformatics Elmhurst/Labs/")
+
+```
+
+#### Step 2, Option 1: Next download a file containing chromosome 11 repeats into this directory. Confirm the file is present using dir().
+Follow the directions in the text. One change from the text, for "group" select "Repeats" instead of "Variations and Repeats". This will give you the repeats found within the beta globin locus of human.
+
+We'll load the file into R (using the read.delim function), we'll call our new table myRepeats (you can assign it almost any name you prefer), specify that the table does have a header, and specify that it is tab-delimited (using sep = "\t"). Get help on a function such as read.delim by entering ?read.delim at the R command prompt.
+
+```{r import from local}
+#dir() # Check to see if you have a file here
+#myRepeats <- read.delim("ucsc_chr11_repeats", header = TRUE, sep = "\t")
+```
+
+#### Step 2, Option 2: Or download the file to your Onedrive folder
+
+I downloaded the file to my [Onedrive](http://onedrive.live.com) folder. I went to onedrive.live.com and copied the link to the file (right click, Share, copy link)
+
+my link was: "https://onedrive.live.com/redir?resid=30EDAB7532D5FA27!12902&authkey=!ABDFBynRWYSefWA&ithint=file%2c"
+
+You must replace the 'redir' to 'download' in the link for the curl function to work. See below
+
+```{r import from Onedrive}
+
+myfile <- curl("https://onedrive.live.com/download?resid=30EDAB7532D5FA27!12902&authkey=!ABDFBynRWYSefWA&ithint=file%2c")
+myRepeats <- read.delim(myfile, header = TRUE, sep = "\t")
+
+```
+
+
+#### Now we'll look at the file various ways, and change the names of the column headers.
+
+```{r look}
+head(myRepeats)
+# Change the names of the headers to something easier to read/understand
+colnames(myRepeats) <- c("swScore", "start", "end", "strand", "name", "class", "family")
+# Look at new header names
+head(myRepeats)
+# Summary stats for each column
+summary(myRepeats)
+# Rows by Columns:
+dim(myRepeats)
+# Show types of variables in each column:
+str(myRepeats)
+```
+
+#### Plot the repeat classes as a boxplot.
+
+```{r plot}
+
+# create a plot object with your data and parameters for the plot
+plot <- ggplot(data = myRepeats, aes(x= class, y= swScore)) +
+  geom_boxplot(fill= "pink") +
+  ylim(c(0,27500)) +
+  ggtitle("Repeat classes in the human beta globin locus") +
+  xlab("Class") +
+  ylab("SW Score")
+
+# print the plot  
+plot  
+```
+
+#### Use tapply to apply the functions mean and range over the entire array.
+
+```{r tapply}
+tapply(myRepeats$swScore, myRepeats$class, mean)
+tapply(myRepeats$swScore, myRepeats$class, range)
+```
+
+### Questions
+
+1. Remake the plot for the human kit locus. Use the lookup function of the position text field by searching for 'kit'. Download the same file type as before, then redo the analysis with that locus. 
+
+2. What is the mean SW score for the LINE class of kit and beta globin?
+
+
+```{r}
+myfile <- curl("https://onedrive.live.com/download?resid=30EDAB7532D5FA27!12903&authkey=!AKbh9x5EnPSpidk&ithint=file%2c")
+kitRepeats <- read.delim(myfile, header = TRUE, sep = "\t")
+
+# kitRepeats <- read.delim("ucsc_kit_repeats", header = TRUE, sep = "\t") #for local access
+colnames(kitRepeats) <- c("swScore", "start", "end", "strand", "name", "class", "family")
+
+
+plot2 <- ggplot(data = kitRepeats, aes(x= class, y= swScore)) +
+  geom_boxplot(fill= "paleturquoise") +
+  ylim(c(0, 27500)) +
+  ggtitle("Repeat classes in the human kit locus") +
+  xlab("Class") +
+  ylab("SW Score")
+  
+plot2 
+
+tapply(kitRepeats$swScore, kitRepeats$class, mean)
+
+plot(x = myRepeats$class, 
+     y = myRepeats$swScore, 
+     main = "Repeat classes in the human beta globin locus",
+     col = "pink", 
+     xlab = "repeat class",
+     ylab = "SW score")
+```
+
+
+#### Show the session information
+```{r}
+sessionInfo()
+```
